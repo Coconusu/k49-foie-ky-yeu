@@ -1,0 +1,10 @@
+public/images/**/*.mov
+public/images/**/*.MOV
+public/images/**/*.mp4
+public/images/**/*.MP4
+public/images/**/*.heic
+public/images/**/*.HEIC
+public/images/**/*.heif
+public/images/**/*.HEIF
+public/images/**/*.tiff
+public/images/**/*.TIFF
