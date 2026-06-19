@@ -11,11 +11,13 @@ const CATEGORIES = [
   { folder: "05-tot-nghiep", label: "Tốt nghiệp" },
 ];
 
+const THUMBNAIL_CYCLE_COUNT = 6;
+
 export type GalleryCategory = {
   key: string;
   label: string;
   images: string[];
-  thumbnail: string | null;
+  thumbnails: string[];
 };
 
 export function getGalleryCategories(): GalleryCategory[] {
@@ -38,7 +40,7 @@ export function getGalleryCategories(): GalleryCategory[] {
       key: folder,
       label,
       images,
-      thumbnail: images[0] ?? null,
+      thumbnails: images.slice(0, THUMBNAIL_CYCLE_COUNT),
     };
   });
 }

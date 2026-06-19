@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 const navItems = [
   { label: "Trang chủ", href: "#trang-chu" },
@@ -25,7 +26,16 @@ export default function Navbar() {
       }`}
     >
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <span className="font-itim text-xl text-white">K49 · FOIE</span>
+        <div className="flex items-center gap-2">
+          <Image
+            src="/logo.png"
+            alt="Logo Khoa Kinh tế Quốc tế"
+            width={36}
+            height={36}
+            className="h-9 w-9 object-contain"
+          />
+          <span className="font-itim text-xl text-white">K49 · FOIE</span>
+        </div>
         <ul className="flex gap-6 font-be-vietnam text-sm text-white/90 md:text-base">
           {navItems.map((item) => (
             <li key={item.href}>

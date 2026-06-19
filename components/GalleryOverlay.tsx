@@ -7,8 +7,30 @@ import LightRefraction from "@/components/LightRefraction";
 import DriftingImage, { type DriftItem } from "@/components/DriftingImage";
 import type { GalleryCategory } from "@/lib/gallery";
 
-const DESKTOP_CAP = 18;
-const MOBILE_CAP = 8;
+// Số ảnh trôi cùng lúc được tính theo diện tích viewport thực tế (gần tràn
+// kín màn hình), có trần an toàn riêng cho mobile/desktop để tránh giật lag.
+const MOBILE_BREAKPOINT = 640;
+const MOBILE_TILE_FOOTPRINT = 100 * 100;
+const DESKTOP_TILE_FOOTPRINT = 150 * 150;
+const FILL_DENSITY = 0.55;
+const MOBILE_FLOOR = 6;
+const MOBILE_CEILING = 20;
+const DESKTOP_FLOOR = 12;
+const DESKTOP_CEILING = 45;
+
+function computeCap(): number {
+  if (typeof window === "undefined") return DESKTOP_FLOOR;
+
+  const isMobile = window.innerWidth < MOBILE_BREAKPOINT;
+  const tileFootprint = isMobile ? MOBILE_TILE_FOOTPRINT : DESKTOP_TILE_FOOTPRINT;
+  const dynamic = Math.round(
+    (window.innerWidth * window.innerHeight * FILL_DENSITY) / tileFootprint,
+  );
+
+  return isMobile
+    ? Math.max(MOBILE_FLOOR, Math.min(dynamic, MOBILE_CEILING))
+    : Math.max(DESKTOP_FLOOR, Math.min(dynamic, DESKTOP_CEILING));
+}
 
 function sample<T>(source: T[], count: number): T[] {
   if (source.length <= count) return source;
@@ -21,9 +43,7 @@ function sample<T>(source: T[], count: number): T[] {
 }
 
 function buildDriftItems(images: string[]): DriftItem[] {
-  const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
-  const cap = isMobile ? MOBILE_CAP : DESKTOP_CAP;
-  const shown = sample(images, cap);
+  const shown = sample(images, computeCap());
 
   const cols = Math.max(1, Math.round(Math.sqrt(shown.length * 1.6)));
   const rows = Math.ceil(shown.length / cols);
