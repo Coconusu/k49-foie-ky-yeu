@@ -45,12 +45,12 @@ export default function CollageTile({
   const brightness = useTransform(
     scrollYProgress,
     [range.start, peak, range.end],
-    [1, 1.5, 0.4],
+    [1, 1.6, 0.4],
   );
   const glow = useTransform(
     scrollYProgress,
     [range.start, peak, range.end],
-    [0, 0.7, 0],
+    [0, 0.85, 0],
   );
 
   // Ép qua useMotionTemplate (giá trị string) thay vì gán trực tiếp số —
@@ -58,11 +58,13 @@ export default function CollageTile({
   // cấu trúc motion.div này, nhưng template string thì luôn đồng bộ đúng.
   const opacityStyle = useMotionTemplate`${opacity}`;
   const filter = useMotionTemplate`brightness(${brightness})`;
-  const boxShadow = useMotionTemplate`0 0 40px rgba(126, 200, 227, ${glow})`;
+  const boxShadow = useMotionTemplate`0 0 50px rgba(126, 200, 227, ${glow})`;
 
   return (
+    // Khung NGOÀI không có overflow-hidden — box-shadow (glow) cần render
+    // ra ngoài viền tile, overflow-hidden ở đây sẽ cắt mất glow hoàn toàn.
     <motion.div
-      className="glass absolute overflow-hidden rounded-2xl p-1"
+      className="glass absolute rounded-2xl p-1"
       style={{
         left: layout.left,
         top: layout.top,
@@ -73,22 +75,25 @@ export default function CollageTile({
         ...(simplified ? {} : { filter, boxShadow }),
       }}
     >
-      <motion.div
-        className="relative h-full w-full overflow-hidden rounded-xl"
-        style={{ transformOrigin: layout.origin }}
-        initial={{ scale: 1 }}
-        animate={{ scale: [1, 1.05, 1] }}
-        transition={{ duration: layout.duration, repeat: Infinity, ease: "easeInOut" }}
-      >
-        <Image
-          src={src}
-          alt="Ảnh tập thể K49 - FOIE"
-          fill
-          priority={priority}
-          sizes="(min-width: 640px) 35vw, 60vw"
-          className="object-cover"
-        />
-      </motion.div>
+      {/* Lớp trong mới làm nhiệm vụ cắt ảnh đúng khung bo góc */}
+      <div className="relative h-full w-full overflow-hidden rounded-xl">
+        <motion.div
+          className="relative h-full w-full"
+          style={{ transformOrigin: layout.origin }}
+          initial={{ scale: 1 }}
+          animate={{ scale: [1, 1.06, 1] }}
+          transition={{ duration: layout.duration, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <Image
+            src={src}
+            alt="Ảnh tập thể K49 - FOIE"
+            fill
+            priority={priority}
+            sizes="(min-width: 640px) 35vw, 60vw"
+            className="object-cover"
+          />
+        </motion.div>
+      </div>
     </motion.div>
   );
 }
