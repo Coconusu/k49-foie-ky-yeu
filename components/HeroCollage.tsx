@@ -1,58 +1,67 @@
 "use client";
 
-import Image from "next/image";
-import { motion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { useScroll } from "framer-motion";
+import CollageTile, { type TileLayout } from "@/components/CollageTile";
+import { sampleRandom } from "@/lib/random";
 
-type CollageTile = {
-  src: string;
-  left: string;
-  top: string;
-  width: string;
-  height: string;
-  z: number;
-  origin: string;
-  duration: number;
-};
-
-const tiles: CollageTile[] = [
-  // lớp nền — vài ảnh to
-  { src: "/images/01-nhap-hoc/z7835022534399_4ea8460a0580ad9eed488013e81041c9.jpg", left: "-6%", top: "-6%", width: "56%", height: "62%", z: 10, origin: "top left", duration: 18 },
-  { src: "/images/03-su-kien-gala/DSC03927.JPG", left: "38%", top: "8%", width: "52%", height: "56%", z: 11, origin: "top right", duration: 20 },
-  { src: "/images/04-da-ngoai/AI6A6898.jpeg", left: "4%", top: "42%", width: "50%", height: "58%", z: 10, origin: "bottom left", duration: 16 },
-  // lớp đè lên — ảnh nhỏ hơn, lệch vị trí
-  { src: "/images/02-hoat-dong-clb/IMG_4349_Original.JPG", left: "10%", top: "10%", width: "20%", height: "24%", z: 20, origin: "center", duration: 15 },
-  { src: "/images/01-nhap-hoc/z7938926022342_c56a366091763109b1aa18772106f7d4.jpg", left: "62%", top: "6%", width: "19%", height: "22%", z: 21, origin: "top right", duration: 19 },
-  { src: "/images/03-su-kien-gala/IMG_8552.JPG", left: "74%", top: "48%", width: "21%", height: "26%", z: 20, origin: "bottom right", duration: 17 },
-  { src: "/images/02-hoat-dong-clb/IMG_5210_Original.JPG", left: "32%", top: "62%", width: "20%", height: "24%", z: 22, origin: "bottom left", duration: 20 },
-  { src: "/images/04-da-ngoai/IMG_5469.JPG", left: "52%", top: "36%", width: "18%", height: "22%", z: 23, origin: "center", duration: 16 },
+// Bố cục cố định: 3 ảnh to làm nền (z thấp) + 5 ảnh nhỏ đè lên (z cao),
+// tất cả nằm gọn trong [0%,100%] để không tràn ra ngoài khung hero.
+const LAYOUT: TileLayout[] = [
+  { left: "0%", top: "0%", width: "54%", height: "58%", z: 10, origin: "top left", duration: 18 },
+  { left: "40%", top: "6%", width: "54%", height: "54%", z: 11, origin: "top right", duration: 20 },
+  { left: "6%", top: "46%", width: "50%", height: "52%", z: 10, origin: "bottom left", duration: 16 },
+  { left: "8%", top: "8%", width: "20%", height: "24%", z: 20, origin: "center", duration: 15 },
+  { left: "60%", top: "6%", width: "19%", height: "22%", z: 21, origin: "top right", duration: 19 },
+  { left: "72%", top: "50%", width: "22%", height: "26%", z: 20, origin: "bottom right", duration: 17 },
+  { left: "30%", top: "64%", width: "20%", height: "24%", z: 22, origin: "bottom left", duration: 20 },
+  { left: "50%", top: "38%", width: "18%", height: "22%", z: 23, origin: "center", duration: 16 },
 ];
 
-export default function HeroCollage() {
+export default function HeroCollage({ images }: { images: string[] }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end start"],
+  });
+
+  const [sources, setSources] = useState<string[] | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Random ảnh chỉ chạy ở client (sau mount) để mỗi lần reload ra 1 tập
+  // ảnh khác nhau mà không gây lệch HTML server/client (hydration mismatch).
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional client-only randomization, must run post-mount to avoid SSR/client mismatch
+    setIsMobile(window.innerWidth < 640);
+    setSources(sampleRandom(images, LAYOUT.length));
+  }, [images]);
+
+  // Thứ tự "cháy sáng rồi tắt" theo scroll đi theo vị trí top-to-bottom thật
+  // của từng ảnh trên màn hình, không theo thứ tự khai báo trong LAYOUT.
+  const order = [...LAYOUT.keys()].sort(
+    (a, b) => parseFloat(LAYOUT[a].top) - parseFloat(LAYOUT[b].top),
+  );
+
   return (
-    <div className="absolute inset-0 overflow-hidden">
-      {tiles.map((tile, index) => (
-        <div
-          key={tile.src}
-          className="glass absolute overflow-hidden rounded-2xl p-1"
-          style={{ left: tile.left, top: tile.top, width: tile.width, height: tile.height, zIndex: tile.z }}
-        >
-          <motion.div
-            className="relative h-full w-full overflow-hidden rounded-xl"
-            style={{ transformOrigin: tile.origin }}
-            animate={{ scale: [1, 1.05, 1] }}
-            transition={{ duration: tile.duration, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <Image
-              src={tile.src}
-              alt="Ảnh tập thể K49 - FOIE"
-              fill
-              priority={index === 0}
-              sizes="(min-width: 640px) 35vw, 60vw"
-              className="object-cover"
-            />
-          </motion.div>
-        </div>
-      ))}
+    <div ref={containerRef} className="absolute inset-0 overflow-hidden">
+      {sources?.map((src, index) => {
+        const rank = order.indexOf(index);
+        const range = isMobile
+          ? { start: 0, end: 0.4 } // mobile: cả khối fade nhanh cùng lúc, tránh lag
+          : { start: rank / LAYOUT.length, end: (rank + 1) / LAYOUT.length };
+
+        return (
+          <CollageTile
+            key={src}
+            src={src}
+            layout={LAYOUT[index]}
+            range={range}
+            scrollYProgress={scrollYProgress}
+            simplified={isMobile}
+            priority={index === 0}
+          />
+        );
+      })}
     </div>
   );
 }

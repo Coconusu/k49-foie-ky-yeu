@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import LightRefraction from "@/components/LightRefraction";
 import DriftingImage, { type DriftItem } from "@/components/DriftingImage";
 import type { GalleryCategory } from "@/lib/gallery";
+import { sampleRandom } from "@/lib/random";
 
 // Số ảnh trôi cùng lúc được tính theo diện tích viewport thực tế (gần tràn
 // kín màn hình), có trần an toàn riêng cho mobile/desktop để tránh giật lag.
@@ -32,18 +33,8 @@ function computeCap(): number {
     : Math.max(DESKTOP_FLOOR, Math.min(dynamic, DESKTOP_CEILING));
 }
 
-function sample<T>(source: T[], count: number): T[] {
-  if (source.length <= count) return source;
-  const shuffled = [...source];
-  for (let i = shuffled.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled.slice(0, count);
-}
-
 function buildDriftItems(images: string[]): DriftItem[] {
-  const shown = sample(images, computeCap());
+  const shown = sampleRandom(images, computeCap());
 
   const cols = Math.max(1, Math.round(Math.sqrt(shown.length * 1.6)));
   const rows = Math.ceil(shown.length / cols);

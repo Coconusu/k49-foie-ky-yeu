@@ -1,14 +1,17 @@
 import HeroCollage from "@/components/HeroCollage";
 import LightRefraction from "@/components/LightRefraction";
 import ScrollIndicator from "@/components/ScrollIndicator";
+import { getGalleryCategories } from "@/lib/gallery";
 
 export default function Hero() {
+  const allImages = getGalleryCategories().flatMap((category) => category.images);
+
   return (
     <section
       id="trang-chu"
-      className="relative flex h-screen w-full items-center justify-center overflow-hidden"
+      className="relative isolate flex h-screen w-full items-center justify-center overflow-hidden"
     >
-      <HeroCollage />
+      <HeroCollage images={allImages} />
       <div className="hero-overlay absolute inset-0" />
       <LightRefraction />
 
