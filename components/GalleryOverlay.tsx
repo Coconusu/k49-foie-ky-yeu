@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import LightRefraction from "@/components/LightRefraction";
@@ -8,48 +8,38 @@ import DriftingImage, { type DriftItem } from "@/components/DriftingImage";
 import type { GalleryCategory } from "@/lib/gallery";
 import { sampleRandom } from "@/lib/random";
 
-// Số ảnh trôi cùng lúc được tính theo diện tích viewport thực tế (gần tràn
-// kín màn hình), có trần an toàn riêng cho mobile/desktop để tránh giật lag.
+// Ảnh trôi tự do được trải trên một dải canvas RỘNG HƠN màn hình (cuộn ngang
+// được) thay vì chỉ gói trong 1 khung hình, để xem hết toàn bộ ảnh trong mục
+// mà vẫn giữ mật độ ảnh/diện tích như cũ (không giật lag dù mở mục nhiều ảnh).
 const MOBILE_BREAKPOINT = 640;
-const MOBILE_TILE_FOOTPRINT = 100 * 100;
-const DESKTOP_TILE_FOOTPRINT = 150 * 150;
-const FILL_DENSITY = 0.55;
-const MOBILE_FLOOR = 6;
-const MOBILE_CEILING = 20;
-const DESKTOP_FLOOR = 12;
-const DESKTOP_CEILING = 45;
+const CELL_PX_MOBILE = 112;
+const CELL_PX_DESKTOP = 150;
+const ROWS_MOBILE = 3;
+const ROWS_DESKTOP = 3;
+const ABSOLUTE_CEILING = 80; // chặn cứng số ảnh trôi cùng lúc dù đã cho cuộn ngang
 
-function computeCap(): number {
-  if (typeof window === "undefined") return DESKTOP_FLOOR;
+function buildDriftLayout(images: string[]): { items: DriftItem[]; canvasWidthPx: number } {
+  const shown = sampleRandom(images, Math.min(images.length, ABSOLUTE_CEILING));
 
-  const isMobile = window.innerWidth < MOBILE_BREAKPOINT;
-  const tileFootprint = isMobile ? MOBILE_TILE_FOOTPRINT : DESKTOP_TILE_FOOTPRINT;
-  const dynamic = Math.round(
-    (window.innerWidth * window.innerHeight * FILL_DENSITY) / tileFootprint,
-  );
+  const isMobile = typeof window !== "undefined" && window.innerWidth < MOBILE_BREAKPOINT;
+  const cellPx = isMobile ? CELL_PX_MOBILE : CELL_PX_DESKTOP;
+  const rows = isMobile ? ROWS_MOBILE : ROWS_DESKTOP;
+  const cols = Math.max(1, Math.ceil(shown.length / rows));
+  const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 1280;
+  const canvasWidthPx = Math.max(viewportWidth, cols * cellPx);
 
-  return isMobile
-    ? Math.max(MOBILE_FLOOR, Math.min(dynamic, MOBILE_CEILING))
-    : Math.max(DESKTOP_FLOOR, Math.min(dynamic, DESKTOP_CEILING));
-}
+  const cellWidth = 100 / cols;
+  const cellHeight = 100 / rows;
 
-function buildDriftItems(images: string[]): DriftItem[] {
-  const shown = sampleRandom(images, computeCap());
-
-  const cols = Math.max(1, Math.round(Math.sqrt(shown.length * 1.6)));
-  const rows = Math.ceil(shown.length / cols);
-
-  return shown.map((src, index) => {
+  const items = shown.map((src, index) => {
     const col = index % cols;
     const row = Math.floor(index / cols);
-    const cellWidth = 100 / cols;
-    const cellHeight = 100 / rows;
     const jitterX = (Math.random() - 0.5) * cellWidth * 0.6;
     const jitterY = (Math.random() - 0.5) * cellHeight * 0.6;
 
     return {
       src,
-      left: Math.min(90, Math.max(8, col * cellWidth + cellWidth / 2 + jitterX)),
+      left: Math.min(98, Math.max(2, col * cellWidth + cellWidth / 2 + jitterX)),
       top: Math.min(86, Math.max(12, row * cellHeight + cellHeight / 2 + jitterY)),
       duration: 6 + Math.random() * 6,
       delay: Math.random() * 3,
@@ -57,6 +47,8 @@ function buildDriftItems(images: string[]): DriftItem[] {
       driftAmp: 10 + Math.random() * 12,
     };
   });
+
+  return { items, canvasWidthPx };
 }
 
 export default function GalleryOverlay({
@@ -66,23 +58,16 @@ export default function GalleryOverlay({
   category: GalleryCategory;
   onClose: () => void;
 }) {
+  const [driftLayout] = useState(() => buildDriftLayout(category.images));
   const [focusedSrc, setFocusedSrc] = useState<string | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Mobile có ít chỗ hơn cho ảnh trôi tự do nên chỉ lấy được ~nửa số ảnh so
-  // với desktop -> đổi sang dải scroll ngang xem hết toàn bộ ảnh, vẫn giữ
-  // tap-để-zoom. Chỉ biết là mobile sau mount nên set ở effect, không gây
-  // lệch HTML server/client vì overlay này chỉ mount sau khi người dùng
-  // bấm mở (luôn ở client).
+  // Mở overlay ở giữa dải ảnh, để 2 phía trái/phải đều có ảnh cuộn tới xem.
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- chỉ biết viewport thật sau mount
-    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
   }, []);
-
-  const driftItems = useMemo<DriftItem[]>(
-    () => (isMobile ? [] : buildDriftItems(category.images)),
-    [isMobile, category.images],
-  );
 
   return (
     <motion.div
@@ -120,34 +105,26 @@ export default function GalleryOverlay({
               and the next slide?
             </motion.p>
           </div>
-        ) : isMobile ? (
-          <div className="flex h-full w-full items-center gap-4 overflow-x-auto overscroll-x-contain px-6 py-10 snap-x snap-mandatory">
-            {category.images.map((src) => (
-              <button
-                key={src}
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setFocusedSrc(src);
-                }}
-                className="relative h-[60vh] w-[72vw] shrink-0 snap-center overflow-hidden rounded-2xl border border-white/20 bg-white/10 shadow-xl backdrop-blur-md"
-              >
-                <Image src={src} alt="" fill sizes="72vw" className="object-cover" />
-              </button>
-            ))}
-          </div>
         ) : (
-          driftItems.map((item) => (
-            <DriftingImage
-              key={item.src}
-              item={item}
-              isFocused={focusedSrc === item.src}
-              isDimmed={focusedSrc !== null && focusedSrc !== item.src}
-              onToggle={() =>
-                setFocusedSrc((current) => (current === item.src ? null : item.src))
-              }
-            />
-          ))
+          <div
+            ref={scrollRef}
+            className="no-scrollbar h-full w-full overflow-x-auto overflow-y-hidden"
+            style={{ touchAction: "pan-x" }}
+          >
+            <div className="relative h-full" style={{ width: `${driftLayout.canvasWidthPx}px` }}>
+              {driftLayout.items.map((item) => (
+                <DriftingImage
+                  key={item.src}
+                  item={item}
+                  isFocused={focusedSrc === item.src}
+                  isDimmed={focusedSrc !== null && focusedSrc !== item.src}
+                  onToggle={() =>
+                    setFocusedSrc((current) => (current === item.src ? null : item.src))
+                  }
+                />
+              ))}
+            </div>
+          </div>
         )}
       </div>
 

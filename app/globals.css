@@ -24,6 +24,14 @@ body {
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
 }
 
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 .hero-overlay {
   /* radial layer darkens specifically behind the centered heading/tagline
      so text stays legible no matter which random photos sit there */
