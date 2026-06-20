@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import LightRefraction from "@/components/LightRefraction";
@@ -66,8 +66,23 @@ export default function GalleryOverlay({
   category: GalleryCategory;
   onClose: () => void;
 }) {
-  const [driftItems] = useState<DriftItem[]>(() => buildDriftItems(category.images));
   const [focusedSrc, setFocusedSrc] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Mobile có ít chỗ hơn cho ảnh trôi tự do nên chỉ lấy được ~nửa số ảnh so
+  // với desktop -> đổi sang dải scroll ngang xem hết toàn bộ ảnh, vẫn giữ
+  // tap-để-zoom. Chỉ biết là mobile sau mount nên set ở effect, không gây
+  // lệch HTML server/client vì overlay này chỉ mount sau khi người dùng
+  // bấm mở (luôn ở client).
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- chỉ biết viewport thật sau mount
+    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+  }, []);
+
+  const driftItems = useMemo<DriftItem[]>(
+    () => (isMobile ? [] : buildDriftItems(category.images)),
+    [isMobile, category.images],
+  );
 
   return (
     <motion.div
@@ -104,6 +119,22 @@ export default function GalleryOverlay({
             >
               and the next slide?
             </motion.p>
+          </div>
+        ) : isMobile ? (
+          <div className="flex h-full w-full items-center gap-4 overflow-x-auto overscroll-x-contain px-6 py-10 snap-x snap-mandatory">
+            {category.images.map((src) => (
+              <button
+                key={src}
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setFocusedSrc(src);
+                }}
+                className="relative h-[60vh] w-[72vw] shrink-0 snap-center overflow-hidden rounded-2xl border border-white/20 bg-white/10 shadow-xl backdrop-blur-md"
+              >
+                <Image src={src} alt="" fill sizes="72vw" className="object-cover" />
+              </button>
+            ))}
           </div>
         ) : (
           driftItems.map((item) => (
