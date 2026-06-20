@@ -8,16 +8,19 @@ import {
   useTransform,
 } from "framer-motion";
 import CardThumbnail from "@/components/CardThumbnail";
+import { GRADUATION_KEY } from "@/lib/constants";
 import type { GalleryCategory } from "@/lib/gallery";
 
 export default function GalleryCard({
   category,
   onOpen,
+  onUploadClick,
 }: {
   category: GalleryCategory;
   onOpen: () => void;
+  onUploadClick?: () => void;
 }) {
-  const cardRef = useRef<HTMLButtonElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: cardRef,
     offset: ["start end", "end start"],
@@ -29,14 +32,18 @@ export default function GalleryCard({
   const boxShadow = useMotionTemplate`0 0 50px rgba(126, 200, 227, ${glow})`;
 
   return (
-    <motion.button
+    <motion.div
       ref={cardRef}
-      type="button"
+      role="button"
+      tabIndex={0}
       onClick={onOpen}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") onOpen();
+      }}
       whileHover={{ scale: 1.03 }}
       whileTap={{ scale: 0.98 }}
       style={{ filter, boxShadow }}
-      className="glass relative aspect-[4/5] w-full overflow-hidden rounded-3xl text-left"
+      className="glass relative aspect-[4/5] w-full cursor-pointer overflow-hidden rounded-3xl text-left"
     >
       {category.thumbnails.length > 0 ? (
         <CardThumbnail images={category.thumbnails} alt={category.label} />
@@ -46,13 +53,25 @@ export default function GalleryCard({
           <span className="font-be-vietnam text-sm text-white/60">
             Đang chờ ngày tốt nghiệp
           </span>
+          {category.key === GRADUATION_KEY && onUploadClick && (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onUploadClick();
+              }}
+              className="glass flex items-center gap-1 rounded-full px-3 py-1.5 font-be-vietnam text-xs text-white/90 hover:text-white"
+            >
+              <span className="text-base leading-none">+</span> Thêm khoảnh khắc của bạn
+            </button>
+          )}
         </div>
       )}
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-deep/90 to-transparent px-3 pb-3 pt-10">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-deep/90 to-transparent px-3 pb-3 pt-10">
         <span className="font-itim text-lg text-white md:text-xl">
           {category.label}
         </span>
       </div>
-    </motion.button>
+    </motion.div>
   );
 }

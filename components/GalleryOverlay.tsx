@@ -5,6 +5,8 @@ import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import LightRefraction from "@/components/LightRefraction";
 import DriftingImage, { type DriftItem } from "@/components/DriftingImage";
+import { GRADUATION_KEY } from "@/lib/constants";
+import { fetchApprovedGraduationPhotos } from "@/lib/graduationPhotos";
 import type { GalleryCategory } from "@/lib/gallery";
 import { sampleRandom } from "@/lib/random";
 
@@ -58,7 +60,27 @@ export default function GalleryOverlay({
   category: GalleryCategory;
   onClose: () => void;
 }) {
-  const [driftLayout] = useState(() => buildDriftLayout(category.images));
+  const isGraduation = category.key === GRADUATION_KEY;
+
+  // Mục Tốt nghiệp không có ảnh có sẵn trong public/images (rỗng theo CLAUDE.md)
+  // - ảnh hiển thị ở đây là ảnh khách đã upload và được duyệt, lấy từ Firestore.
+  const [graduationPhotos, setGraduationPhotos] = useState<string[] | null>(null);
+  useEffect(() => {
+    if (!isGraduation) return;
+    fetchApprovedGraduationPhotos()
+      .then(setGraduationPhotos)
+      .catch(() => setGraduationPhotos([]));
+  }, [isGraduation]);
+
+  const images = isGraduation ? graduationPhotos ?? [] : category.images;
+
+  const [driftLayout, setDriftLayout] = useState(() => buildDriftLayout(images));
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- dựng lại layout trôi sau khi ảnh đã duyệt tải xong từ Firestore (bất đồng bộ, không có ở lần render đầu)
+    if (isGraduation) setDriftLayout(buildDriftLayout(images));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [images.join(",")]);
+
   const [focusedSrc, setFocusedSrc] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -67,7 +89,11 @@ export default function GalleryOverlay({
     const el = scrollRef.current;
     if (!el) return;
     el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
-  }, []);
+  }, [images.length]);
+
+  // Mục Tốt nghiệp luôn giữ text "and the next slide?" (chưa ra trường) dù
+  // đã có ảnh khách upload được duyệt; các mục khác chỉ hiện text khi rỗng.
+  const showEmptyText = isGraduation || category.images.length === 0;
 
   return (
     <motion.div
@@ -90,8 +116,8 @@ export default function GalleryOverlay({
       </button>
 
       <div className="relative h-full w-full overflow-hidden">
-        {category.images.length === 0 ? (
-          <div className="relative flex h-full w-full items-center justify-center">
+        {showEmptyText && (
+          <div className="absolute inset-0 z-0 flex items-center justify-center">
             <LightRefraction />
             <motion.p
               className="font-itim relative z-10 px-6 text-center text-3xl text-white sm:text-5xl"
@@ -105,10 +131,12 @@ export default function GalleryOverlay({
               and the next slide?
             </motion.p>
           </div>
-        ) : (
+        )}
+
+        {images.length > 0 && (
           <div
             ref={scrollRef}
-            className="no-scrollbar h-full w-full overflow-x-auto overflow-y-hidden"
+            className="no-scrollbar relative z-10 h-full w-full overflow-x-auto overflow-y-hidden"
             style={{ touchAction: "pan-x" }}
           >
             <div className="relative h-full" style={{ width: `${driftLayout.canvasWidthPx}px` }}>
