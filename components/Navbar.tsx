@@ -1,6 +1,3 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Image from "next/image";
 
 const navItems = [
@@ -10,21 +7,8 @@ const navItems = [
 ];
 
 export default function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
-    onScroll();
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
   return (
-    <header
-      className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
-        scrolled ? "glass" : "bg-transparent"
-      }`}
-    >
+    <header className="glass fixed inset-x-0 top-0 z-50">
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <div className="flex items-center gap-2">
           <Image
