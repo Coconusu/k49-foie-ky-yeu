@@ -8,8 +8,8 @@ const navItems = [
 
 export default function Navbar() {
   return (
-    <header className="glass fixed inset-x-0 top-0 z-50">
-      <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+    <header className="glass relative z-50 h-20 w-full">
+      <nav className="mx-auto flex h-full max-w-6xl items-center justify-between px-6">
         <div className="flex items-center gap-2">
           <Image
             src="/logo.png"
