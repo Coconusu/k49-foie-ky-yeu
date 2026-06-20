@@ -1,3 +1,4 @@
+import ConfettiBurst from "@/components/ConfettiBurst";
 import HeroCollage from "@/components/HeroCollage";
 import LightRefraction from "@/components/LightRefraction";
 import ScrollIndicator from "@/components/ScrollIndicator";
@@ -25,6 +26,7 @@ export default function Hero() {
       </div>
 
       <ScrollIndicator />
+      <ConfettiBurst />
     </section>
   );
 }
