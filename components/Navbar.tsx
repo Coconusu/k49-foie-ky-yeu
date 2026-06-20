@@ -8,31 +8,35 @@ const navItems = [
 
 export default function Navbar() {
   return (
-    <header className="glass relative z-50 h-20 w-full">
-      <nav className="mx-auto flex h-full max-w-6xl items-center justify-between px-6">
-        <div className="flex items-center gap-2">
-          <Image
-            src="/logo.png"
-            alt="Logo Khoa Kinh tế Quốc tế"
-            width={36}
-            height={36}
-            className="h-9 w-9 object-contain"
-          />
-          <span className="font-itim text-xl text-white">K49 · FOIE</span>
-        </div>
-        <ul className="flex gap-6 font-be-vietnam text-sm text-white/90 md:text-base">
-          {navItems.map((item) => (
-            <li key={item.href}>
-              <a
-                href={item.href}
-                className="transition-colors hover:text-blue-light"
-              >
-                {item.label}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </nav>
-    </header>
+    <>
+      <header className="glass fixed inset-x-0 top-0 z-50 h-20 w-full">
+        <nav className="mx-auto flex h-full max-w-6xl items-center justify-between px-6">
+          <div className="flex items-center gap-2">
+            <Image
+              src="/logo.png"
+              alt="Logo Khoa Kinh tế Quốc tế"
+              width={36}
+              height={36}
+              className="h-9 w-9 object-contain"
+            />
+            <span className="font-itim text-xl text-white">K49 · FOIE</span>
+          </div>
+          <ul className="flex gap-6 font-be-vietnam text-sm text-white/90 md:text-base">
+            {navItems.map((item) => (
+              <li key={item.href}>
+                <a
+                  href={item.href}
+                  className="transition-colors hover:text-blue-light"
+                >
+                  {item.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </header>
+      {/* Spacer giữ chỗ cho navbar fixed, để hero không bị che dù navbar đã ra khỏi dòng chảy */}
+      <div className="h-20 w-full" aria-hidden />
+    </>
   );
 }

@@ -20,6 +20,12 @@ export type TileLayout = {
 
 export type ScrollRange = { start: number; end: number };
 
+type DriftLayout = TileLayout & {
+  driftX: number;
+  driftY: number;
+  driftDuration: number;
+};
+
 export default function CollageTile({
   src,
   layout,
@@ -29,7 +35,7 @@ export default function CollageTile({
   priority,
 }: {
   src: string;
-  layout: TileLayout;
+  layout: DriftLayout;
   range: ScrollRange;
   scrollYProgress: MotionValue<number>;
   simplified: boolean;
@@ -73,6 +79,14 @@ export default function CollageTile({
         zIndex: layout.z,
         opacity: opacityStyle,
         ...(simplified ? {} : { filter, boxShadow }),
+      }}
+      animate={{
+        x: [0, layout.driftX, 0, -layout.driftX, 0],
+        y: [0, -layout.driftY, 0, layout.driftY, 0],
+      }}
+      transition={{
+        x: { duration: layout.driftDuration, repeat: Infinity, ease: "easeInOut" },
+        y: { duration: layout.driftDuration * 1.15, repeat: Infinity, ease: "easeInOut" },
       }}
     >
       {/* Lớp trong mới làm nhiệm vụ cắt ảnh đúng khung bo góc */}

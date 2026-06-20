@@ -19,10 +19,19 @@ const BASE_LAYOUT: TileLayout[] = [
   { left: "50%", top: "38%", width: "18%", height: "22%", z: 23, origin: "center", duration: 16 },
 ];
 
-const SAFE_ZONE_RADIUS_RATIO = 0.26; // bán kính = 26% cạnh nhỏ hơn của viewport
+const SAFE_ZONE_RADIUS_RATIO = 0.34; // bán kính = 34% cạnh nhỏ hơn của viewport (nới rộng khỏi vùng chữ)
+const DRIFT_RADIUS_RATIO = 0.045; // biên độ trôi nổi, cộng thêm vào bán kính né khi fit để trôi vẫn an toàn
 const MIN_SIZE_RATIO = 0.12; // không co tile nhỏ hơn 12% cạnh nhỏ hơn của viewport
 
-type PxLayout = TileLayout & { x: number; y: number; w: number; h: number };
+type PxLayout = TileLayout & {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  driftX: number;
+  driftY: number;
+  driftDuration: number;
+};
 
 // Neo tile vào góc/viewport gần nó nhất (luôn nằm trong khung hero), rồi
 // co dần kích thước từ góc đó cho tới khi rời hẳn vùng tròn an toàn.
@@ -67,9 +76,14 @@ function fitOutsideSafeZone(
 function computePxLayout(viewportW: number, viewportH: number): PxLayout[] {
   const cx = viewportW / 2;
   const cy = viewportH / 2;
-  const radius = Math.min(viewportW, viewportH) * SAFE_ZONE_RADIUS_RATIO;
+  const minEdge = Math.min(viewportW, viewportH);
+  const driftRadius = minEdge * DRIFT_RADIUS_RATIO;
+  // Fit với bán kính = vùng an toàn + biên độ trôi, để dù tile trôi tới đâu
+  // trong biên độ của nó, nó vẫn không bao giờ chạm lại vùng tròn an toàn.
+  const radius = minEdge * SAFE_ZONE_RADIUS_RATIO + driftRadius;
+  const driftAmp = driftRadius / Math.SQRT2;
 
-  return BASE_LAYOUT.map((tile) => {
+  return BASE_LAYOUT.map((tile, index) => {
     const baseRect = {
       x: (parseFloat(tile.left) / 100) * viewportW,
       y: (parseFloat(tile.top) / 100) * viewportH,
@@ -79,7 +93,13 @@ function computePxLayout(viewportW: number, viewportH: number): PxLayout[] {
 
     const fitted = fitOutsideSafeZone(baseRect, viewportW, viewportH, cx, cy, radius);
 
-    return { ...tile, ...fitted };
+    return {
+      ...tile,
+      ...fitted,
+      driftX: index % 2 === 0 ? driftAmp : -driftAmp,
+      driftY: index % 3 === 0 ? -driftAmp : driftAmp,
+      driftDuration: 7 + (index % 4) * 1.6,
+    };
   });
 }
 
