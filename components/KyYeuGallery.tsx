@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import GalleryCard from "@/components/GalleryCard";
 import GalleryOverlay from "@/components/GalleryOverlay";
+import GraduationQueueStatus from "@/components/GraduationQueueStatus";
 import GraduationUploadModal from "@/components/GraduationUploadModal";
 import { GRADUATION_KEY } from "@/lib/constants";
 import type { GalleryCategory } from "@/lib/gallery";
@@ -71,6 +72,8 @@ export default function KyYeuGallery({
       <AnimatePresence>
         {uploadOpen && <GraduationUploadModal onClose={() => setUploadOpen(false)} />}
       </AnimatePresence>
+
+      <GraduationQueueStatus />
     </>
   );
 }

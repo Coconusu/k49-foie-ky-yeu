@@ -17,32 +17,44 @@ function isHeic(file: File): boolean {
   return file.type === "image/heic" || file.type === "image/heif" || /\.(heic|heif)$/i.test(file.name);
 }
 
+export type UploadableBlob = { blob: Blob; extension: string; contentType: string };
+
 // HEIC không hiển thị được trên hầu hết trình duyệt ngoài Safari/iOS, nên
-// convert sang JPEG ngay tại client trước khi upload để hiển thị được mọi nơi.
-async function toUploadableBlob(file: File): Promise<{ blob: Blob; extension: string }> {
+// convert sang JPEG ngay tại client trước khi đưa vào hàng đợi chờ upload.
+// Nếu convert lỗi, fallback giữ nguyên file gốc để KHÔNG làm mất ảnh thật
+// (ảnh vẫn được lưu lên Storage, chỉ là có thể không hiển thị trên mọi máy).
+export async function convertToUploadable(file: File): Promise<UploadableBlob> {
   if (!isHeic(file)) {
     const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
-    return { blob: file, extension };
+    return { blob: file, extension, contentType: file.type || "image/jpeg" };
   }
 
-  const heic2any = (await import("heic2any")).default;
-  const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.82 });
-  const blob = Array.isArray(converted) ? converted[0] : converted;
-  return { blob, extension: "jpg" };
+  try {
+    const heic2any = (await import("heic2any")).default;
+    const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.82 });
+    const blob = Array.isArray(converted) ? converted[0] : converted;
+    return { blob, extension: "jpg", contentType: "image/jpeg" };
+  } catch {
+    return { blob: file, extension: "heic", contentType: file.type || "image/heic" };
+  }
 }
 
-export async function uploadGraduationPhoto(file: File, senderName: string): Promise<void> {
-  const { blob, extension } = await toUploadableBlob(file);
+export async function uploadBlobToGraduation(
+  blob: Blob,
+  extension: string,
+  contentType: string,
+  senderName: string | null,
+): Promise<void> {
   const storagePath = `graduation/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extension}`;
   const storageRef = ref(storage, storagePath);
 
-  await uploadBytes(storageRef, blob, { contentType: extension === "jpg" ? "image/jpeg" : file.type });
+  await uploadBytes(storageRef, blob, { contentType });
   const imageUrl = await getDownloadURL(storageRef);
 
   await addDoc(collection(db, COLLECTION), {
     imageUrl,
     storagePath,
-    senderName: senderName.trim().slice(0, 80) || null,
+    senderName,
     status: "pending",
     createdAt: serverTimestamp(),
   });

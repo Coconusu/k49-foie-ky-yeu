@@ -2,7 +2,8 @@
 
 import { useId, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { isAcceptedGraduationPhoto, uploadGraduationPhoto } from "@/lib/graduationPhotos";
+import { convertToUploadable, isAcceptedGraduationPhoto } from "@/lib/graduationPhotos";
+import { addToQueue, processQueue } from "@/lib/graduationQueue";
 
 type SelectedFile = { file: File; previewUrl: string };
 
@@ -12,7 +13,7 @@ export default function GraduationUploadModal({ onClose }: { onClose: () => void
   const [senderName, setSenderName] = useState("");
   const [selected, setSelected] = useState<SelectedFile[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState<"idle" | "submitting" | "done">("idle");
+  const [status, setStatus] = useState<"idle" | "submitting" | "queued">("idle");
 
   const handleFiles = (files: FileList | null) => {
     if (!files) return;
@@ -43,13 +44,20 @@ export default function GraduationUploadModal({ onClose }: { onClose: () => void
     setStatus("submitting");
     setError(null);
 
+    // Lưu THẬT vào IndexedDB của trình duyệt trước, để ảnh không bị mất dù
+    // Firebase Storage đang lỗi hoặc mất mạng. Việc upload thật chạy ngầm
+    // và tự thử lại sau (xem GraduationQueueStatus).
     try {
+      const trimmedName = senderName.trim().slice(0, 80) || null;
       for (const { file } of selected) {
-        await uploadGraduationPhoto(file, senderName);
+        const uploadable = await convertToUploadable(file);
+        await addToQueue({ ...uploadable, senderName: trimmedName });
       }
-      setStatus("done");
+
+      processQueue();
+      setStatus("queued");
     } catch {
-      setError("Gửi ảnh thất bại, vui lòng thử lại.");
+      setError("Không thể lưu ảnh trên thiết bị này (có thể do trình duyệt đang ở chế độ riêng tư hoặc hết dung lượng). Vui lòng thử lại hoặc dùng thiết bị/trình duyệt khác.");
       setStatus("idle");
     }
   };
@@ -81,12 +89,14 @@ export default function GraduationUploadModal({ onClose }: { onClose: () => void
           ✕
         </button>
 
-        {status === "done" ? (
+        {status === "queued" ? (
           <div className="flex flex-col items-center gap-3 py-6 text-center">
-            <span className="text-4xl">🎉</span>
-            <p className="font-itim text-xl text-white">Đã gửi ảnh!</p>
+            <span className="text-4xl">📤</span>
+            <p className="font-itim text-xl text-white">Đã nhận ảnh, đang xử lý...</p>
             <p className="font-be-vietnam text-sm text-white/70">
-              Ảnh của bạn đang chờ duyệt, sẽ xuất hiện trong mục Tốt nghiệp sau khi được phê duyệt.
+              Ảnh đã được lưu an toàn trên thiết bị này và đang được tự động gửi lên hệ thống. Quá
+              trình này có thể mất một chút thời gian — bạn có thể theo dõi trạng thái gửi ở góc màn
+              hình. Ảnh chỉ thật sự hiển thị công khai sau khi gửi thành công và được duyệt.
             </p>
             <button
               type="button"
