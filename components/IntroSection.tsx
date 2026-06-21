@@ -6,14 +6,19 @@ export default function IntroSection() {
           Về K49 - FOIE
         </h2>
         <p className="mt-4 font-be-vietnam text-base leading-relaxed text-white/80 md:text-lg">
-          Trang web này là lời tri ân mà Khoa Kinh tế Quốc tế xin gửi đến K49
-          — những người đã cùng Khoa đi qua một chặng đường đáng nhớ. Từ
-          những bước chân đầu tiên còn nhiều bỡ ngỡ, đến những hoạt động,
-          những kỷ niệm cùng nhau gây dựng, K49 đã lớn lên và trưởng thành
-          trong vòng tay của Khoa suốt những năm tháng tại Học viện Ngoại
-          giao. Mỗi hình ảnh, mỗi câu chuyện được lưu giữ ở đây là một lời
-          cảm ơn nhỏ, dành cho hành trình lớn mà chúng ta đã cùng nhau viết
-          nên.
+          Đây là nơi lưu giữ những ký ức đáng nhớ của K49 – Khoa Kinh tế Quốc
+          tế. Từ những ngày đầu bước chân vào Học viện Ngoại giao với biết
+          bao bỡ ngỡ, đến những năm tháng học tập, hoạt động và trưởng thành
+          cùng nhau dưới mái nhà FOIE, mỗi khoảnh khắc đều góp phần tạo nên
+          một hành trình thanh xuân trọn vẹn.
+        </p>
+        <p className="mt-4 font-be-vietnam text-base leading-relaxed text-white/80 md:text-lg">
+          Không chỉ là nơi lưu giữ những dấu ấn của một thời sinh viên, đây
+          còn là không gian để các anh chị K49 gửi lại những câu chuyện,
+          những kỷ niệm và những cảm xúc chân thành của riêng mình. Qua từng
+          dòng chia sẻ, đó cũng là lời tri ân sâu sắc gửi tới Khoa Kinh tế
+          Quốc tế – nơi đã luôn đồng hành, dìu dắt và trở thành một phần
+          không thể thiếu trong hành trình trưởng thành của mỗi người.
         </p>
       </div>
     </section>
